@@ -19,9 +19,11 @@ import { useForm } from '@tanstack/react-form'
 import { loginSchema } from '@/schemas/auth'
 import { authClient } from '@/lib/auth-client'
 import { toast } from 'sonner'
+import { useTransition } from 'react'
 
 export function LoginForm() {
   const navigate = useNavigate()
+  const [isPending, startTransition] = useTransition()
   const form = useForm({
     defaultValues: {
       email: '',
@@ -30,22 +32,24 @@ export function LoginForm() {
     validators: {
       onSubmit: loginSchema,
     },
-    onSubmit: async ({ value }) => {
-      await authClient.signIn.email({
-        email: value.email,
-        password: value.password,
-        // callbackURL: '/dashboard',
-        fetchOptions: {
-          onSuccess: () => {
-            toast.success('Login telah berhasil')
-            navigate({
-              to: '/',
-            })
+    onSubmit: ({ value }) => {
+      startTransition(async () => {
+        await authClient.signIn.email({
+          email: value.email,
+          password: value.password,
+          // callbackURL: '/dashboard',
+          fetchOptions: {
+            onSuccess: () => {
+              toast.success('Login telah berhasil')
+              navigate({
+                to: '/dashboard',
+              })
+            },
+            onError: ({ error }) => {
+              toast.error(error.message)
+            },
           },
-          onError: ({ error }) => {
-            toast.error(error.message)
-          },
-        },
+        })
       })
     },
   })
@@ -118,7 +122,9 @@ export function LoginForm() {
               }}
             />
             <Field>
-              <Button type="submit">Login</Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? 'Masuk halaman...' : 'Masuk'}
+              </Button>
               <FieldDescription className="text-center">
                 Tidak punya akun? <Link to={'/signup'}>Sign Up</Link>
               </FieldDescription>

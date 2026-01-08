@@ -19,9 +19,11 @@ import { useForm } from '@tanstack/react-form'
 import { signUpSchema } from '@/schemas/auth'
 import { authClient } from '@/lib/auth-client'
 import { toast } from 'sonner'
+import { useTransition } from 'react'
 
 export function SignupForm() {
   const navigate = useNavigate()
+  const [isPending, startTransition] = useTransition()
   const form = useForm({
     defaultValues: {
       fullName: '',
@@ -32,23 +34,25 @@ export function SignupForm() {
     validators: {
       onSubmit: signUpSchema,
     },
-    onSubmit: async ({ value }) => {
-      await authClient.signUp.email({
-        name: value.fullName,
-        email: value.email,
-        password: value.password,
-        // callbackURL: '/dashboard',
-        fetchOptions: {
-          onSuccess: () => {
-            toast.success('Berhasil Membuat Akun')
-            navigate({
-              to: '/',
-            })
+    onSubmit: ({ value }) => {
+      startTransition(async () => {
+        await authClient.signUp.email({
+          name: value.fullName,
+          email: value.email,
+          password: value.password,
+          // callbackURL: '/dashboard',
+          fetchOptions: {
+            onSuccess: () => {
+              toast.success('Berhasil Membuat Akun')
+              navigate({
+                to: '/dashboard',
+              })
+            },
+            onError: ({ error }) => {
+              toast.error(error.message)
+            },
           },
-          onError: ({ error }) => {
-            toast.error(error.message)
-          },
-        },
+        })
       })
     },
   })
@@ -179,7 +183,9 @@ export function SignupForm() {
             />
             <FieldGroup>
               <Field>
-                <Button type="submit">Buat Akun</Button>
+                <Button type="submit" disabled={isPending}>
+                  {isPending ? 'Membuat akun...' : 'Buat Akun'}
+                </Button>
                 <FieldDescription className="px-6 text-center">
                   Sudah punya akun? <Link to="/login">Sign in</Link>
                 </FieldDescription>

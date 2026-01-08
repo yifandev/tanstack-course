@@ -19,7 +19,13 @@ export function NavProjects({ items }: NavPrimaryProps) {
             return (
               <SidebarMenuItem key={index}>
                 <SidebarMenuButton asChild size="sm">
-                  <Link to={item.to}>
+                  <Link
+                    activeProps={{
+                      'data-active': true,
+                    }}
+                    to={item.to}
+                    activeOptions={item.activeOptions}
+                  >
                     <item.icon />
                     <span>{item.title}</span>
                   </Link>

@@ -1,14 +1,6 @@
 'use client'
 
-import * as React from 'react'
-import {
-  BookmarkIcon,
-  Compass,
-  Frame,
-  Import,
-  Map,
-  PieChart,
-} from 'lucide-react'
+import { BookmarkIcon, Compass, Import } from 'lucide-react'
 
 import {
   Sidebar,
@@ -23,57 +15,33 @@ import {
 
 import { NavProjects } from './nav-projects'
 import { NavUser } from './nav-user'
-import { Link } from '@tanstack/react-router'
-import { NavPrimaryProps } from '@/lib/types'
+import { Link, linkOptions } from '@tanstack/react-router'
+import { NavPrimaryProps, NavUserProps } from '@/lib/types'
 
-// This is sample data.
-const data = {
-  user: {
-    name: 'shadcn',
-    email: 'm@example.com',
-    avatar: '/avatars/shadcn.jpg',
-  },
-
-  projects: [
-    {
-      name: 'Design Engineering',
-      url: '#',
-      icon: Frame,
-    },
-    {
-      name: 'Sales & Marketing',
-      url: '#',
-      icon: PieChart,
-    },
-    {
-      name: 'Travel',
-      url: '#',
-      icon: Map,
-    },
-  ],
-}
-
-const NavItems: NavPrimaryProps['items'] = [
+const NavItems: NavPrimaryProps['items'] = linkOptions([
   {
     title: 'Items',
     icon: BookmarkIcon,
-    to: '/dashhboard/items',
+    to: '/dashboard/items',
+    activeOptions: { exact: false },
   },
   {
     title: 'Import',
     icon: Import,
-    to: '/dashhboard/import',
+    to: '/dashboard/import',
+    activeOptions: { exact: false },
   },
   {
     title: 'Discover',
     icon: Compass,
-    to: '/dashhboard/discover',
+    to: '/dashboard/discover',
+    activeOptions: { exact: false },
   },
-]
+])
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({ user }: NavUserProps) {
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar collapsible="icon">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -95,7 +63,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavProjects items={NavItems} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
