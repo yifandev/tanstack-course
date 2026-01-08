@@ -1,8 +1,10 @@
 import { z } from 'zod'
 
 /* ================================
-   Reusable validators
+   Reusable Validators
 ================================ */
+
+// Password rules
 const passwordRules = z
   .string()
   .min(8, 'Password minimal 8 karakter')
@@ -12,7 +14,9 @@ const passwordRules = z
   .regex(/[0-9]/, 'Password harus mengandung angka')
   .regex(/[^a-zA-Z0-9]/, 'Password harus mengandung simbol')
 
+// Email rules (Zod v3 compatible)
 const emailRules = z
+  .string()
   .email('Format email tidak valid')
   .max(255, 'Email terlalu panjang')
   .transform((email) => email.toLowerCase())
@@ -20,6 +24,7 @@ const emailRules = z
 /* ================================
    Login Schema
 ================================ */
+
 export const loginSchema = z.object({
   email: emailRules,
   password: z.string().min(1, 'Password wajib diisi'),
@@ -28,6 +33,7 @@ export const loginSchema = z.object({
 /* ================================
    Sign Up Schema
 ================================ */
+
 export const signUpSchema = z
   .object({
     fullName: z
@@ -43,35 +49,33 @@ export const signUpSchema = z
     confirmPassword: z.string().min(1, 'Konfirmasi password wajib diisi'),
   })
   .superRefine((data, ctx) => {
-    // 1️⃣ password === confirmPassword
+    // 1️⃣ Password harus sama
     if (data.password !== data.confirmPassword) {
       ctx.addIssue({
-        code: 'custom',
+        code: z.ZodIssueCode.custom,
         path: ['confirmPassword'],
         message: 'Password tidak sama',
       })
     }
 
-    // 2️⃣ password tidak boleh mengandung nama
-    const normalizedName = data.fullName.replace(/\s/g, '').toLowerCase()
-
+    // 2️⃣ Password tidak boleh mengandung nama
+    const normalizedName = data.fullName.replace(/\s+/g, '').toLowerCase()
     if (
       normalizedName &&
       data.password.toLowerCase().includes(normalizedName)
     ) {
       ctx.addIssue({
-        code: 'custom',
+        code: z.ZodIssueCode.custom,
         path: ['password'],
         message: 'Password tidak boleh mengandung nama Anda',
       })
     }
 
-    // 3️⃣ password tidak boleh mirip email
+    // 3️⃣ Password tidak boleh mirip email
     const emailPrefix = data.email.split('@')[0]?.toLowerCase()
-
     if (emailPrefix && data.password.toLowerCase().includes(emailPrefix)) {
       ctx.addIssue({
-        code: 'custom',
+        code: z.ZodIssueCode.custom,
         path: ['password'],
         message: 'Password tidak boleh mirip dengan email',
       })
@@ -81,5 +85,6 @@ export const signUpSchema = z
 /* ================================
    Types
 ================================ */
+
 export type SignUpInput = z.infer<typeof signUpSchema>
 export type LoginInput = z.infer<typeof loginSchema>
