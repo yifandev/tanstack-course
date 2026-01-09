@@ -81,10 +81,3 @@ export const signUpSchema = z
       })
     }
   })
-
-/* ================================
-   Types
-================================ */
-
-export type SignUpInput = z.infer<typeof signUpSchema>
-export type LoginInput = z.infer<typeof loginSchema>
