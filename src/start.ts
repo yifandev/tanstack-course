@@ -1,8 +1,7 @@
-// src/start.ts
 import { createMiddleware, createStart } from '@tanstack/react-start'
 import { authMiddleware } from './middlewares/auth'
 
-const LoggingMiddleware = createMiddleware({ type: 'request' }).server(
+const loggingMiddleware = createMiddleware({ type: 'request' }).server(
   ({ request, next }) => {
     const url = new URL(request.url)
 
@@ -14,6 +13,6 @@ const LoggingMiddleware = createMiddleware({ type: 'request' }).server(
 
 export const startInstance = createStart(() => {
   return {
-    requestMiddleware: [LoggingMiddleware, authMiddleware],
+    requestMiddleware: [loggingMiddleware, authMiddleware],
   }
 })

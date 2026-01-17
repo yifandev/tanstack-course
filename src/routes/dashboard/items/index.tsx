@@ -19,6 +19,17 @@ export const Route = createFileRoute('/dashboard/items/')({
   component: RouteComponent,
   loader: () => ({ itemsPromise: getItemsFn() }),
   validateSearch: zodValidator(itemsSearchSchema),
+  head: () => ({
+    meta: [
+      {
+        title: 'Saved Items',
+      },
+      {
+        property: 'og:title',
+        content: 'Saved Items',
+      },
+    ],
+  }),
 })
 
 function RouteComponent() {

@@ -5,10 +5,15 @@ import {
   type ExtractInput,
   extractSchema,
   importSchema,
+  searchSchema,
 } from '@/schemas/import'
 import { createServerFn } from '@tanstack/react-start'
+import { notFound } from '@tanstack/react-router'
 import { authFnMiddleware } from '@/middlewares/auth'
 import z from 'zod'
+import { generateText } from 'ai'
+import { openrouter } from '@/lib/openRouter'
+import { SearchResultWeb } from '@mendable/firecrawl-js'
 
 export const scrapeUrlFn = createServerFn({ method: 'POST' })
   .middleware([authFnMiddleware])
@@ -90,6 +95,13 @@ export const mapUrlFn = createServerFn({ method: 'POST' })
     return result.links
   })
 
+export type BulkScrapeProgress = {
+  completed: number
+  total: number
+  url: string
+  status: 'success' | 'failed'
+}
+
 export const bulkScrapeUrlsFn = createServerFn({ method: 'POST' })
   .middleware([authFnMiddleware])
   .inputValidator(
@@ -97,7 +109,8 @@ export const bulkScrapeUrlsFn = createServerFn({ method: 'POST' })
       urls: z.array(z.string().url()),
     }),
   )
-  .handler(async ({ data, context }) => {
+  .handler(async function* ({ data, context }) {
+    const total = data.urls.length
     for (let i = 0; i < data.urls.length; i++) {
       const url = data.urls[i]
 
@@ -108,6 +121,8 @@ export const bulkScrapeUrlsFn = createServerFn({ method: 'POST' })
           status: 'PENDING',
         },
       })
+
+      let status: BulkScrapeProgress['status'] = 'success'
 
       try {
         const result = await firecrawl.scrape(url, {
@@ -148,6 +163,7 @@ export const bulkScrapeUrlsFn = createServerFn({ method: 'POST' })
           },
         })
       } catch {
+        status = 'failed'
         await prisma.savedItem.update({
           where: {
             id: item.id,
@@ -157,6 +173,15 @@ export const bulkScrapeUrlsFn = createServerFn({ method: 'POST' })
           },
         })
       }
+
+      const progress: BulkScrapeProgress = {
+        completed: i + 1,
+        total: total,
+        url: url,
+        status: status,
+      }
+
+      yield progress
     }
   })
 
@@ -172,4 +197,90 @@ export const getItemsFn = createServerFn({ method: 'GET' })
       },
     })
     return items
+  })
+
+export const getItemById = createServerFn({ method: 'GET' })
+  .middleware([authFnMiddleware])
+  .inputValidator(z.object({ id: z.string() }))
+  .handler(async ({ context, data }) => {
+    const item = await prisma.savedItem.findUnique({
+      where: {
+        userId: context?.session.user.id,
+        id: data.id,
+      },
+    })
+
+    if (!item) {
+      throw notFound()
+    }
+
+    return item
+  })
+
+export const saveSummaryAndGenerateTagsFn = createServerFn({
+  method: 'POST',
+})
+  .middleware([authFnMiddleware])
+  .inputValidator(
+    z.object({
+      id: z.string(),
+      summary: z.string(),
+    }),
+  )
+  .handler(async ({ context, data }) => {
+    const existing = await prisma.savedItem.findUnique({
+      where: {
+        id: data.id,
+        userId: context.session.user.id,
+      },
+    })
+
+    if (!existing) {
+      throw notFound()
+    }
+
+    const { text } = await generateText({
+      model: openrouter.chat('xiaomi/mimo-v2-flash:free'),
+      system: `You are a helpful assistant that extracts relevant tags from content summaries.
+Extract 3-5 short, relevant tags that categorize the content.
+Return ONLY a comma-separated list of tags, nothing else.
+Example: technology, programming, web development, javascript`,
+      prompt: `Extract tags from this summary: \n\n${data.summary}`,
+    })
+
+    const tags = text
+      .split(',')
+      .map((tag) => tag.trim().toLowerCase())
+      .filter((tag) => tag.length > 0)
+      .slice(0, 5)
+
+    const item = await prisma.savedItem.update({
+      where: {
+        userId: context.session.user.id,
+        id: data.id,
+      },
+      data: {
+        summary: data.summary,
+        tags: tags,
+      },
+    })
+
+    return item
+  })
+
+export const SearchWebFn = createServerFn({ method: 'POST' })
+  .middleware([authFnMiddleware])
+  .inputValidator(searchSchema)
+  .handler(async ({ data }) => {
+    const result = await firecrawl.search(data.query, {
+      limit: 15,
+      location: 'Germany',
+      tbs: 'qdr:y',
+    })
+
+    return result.web?.map((item) => ({
+      url: (item as SearchResultWeb).url,
+      title: (item as SearchResultWeb).title,
+      description: (item as SearchResultWeb).description,
+    })) as SearchResultWeb[]
   })

@@ -1,6 +1,11 @@
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { getItemsFn } from '@/data/items'
 import { copyToClipboard } from '@/lib/clipboard'
 import { Link } from '@tanstack/react-router'
@@ -73,16 +78,21 @@ export default function ItemList({
           key={item.id}
           className="group transition-all overflow-hidden hover:shadow-lg pt-0"
         >
-          <Link to="/dashboard" className="block">
-            {item.ogImage && (
-              <div className="aspect-video w-full overflow-hidden bg-muted">
-                <img
-                  src={item.ogImage}
-                  alt={item.title ?? 'Article Thumbnail'}
-                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                />
-              </div>
-            )}
+          <Link
+            to="/dashboard/items/$itemId"
+            params={{ itemId: item.id }}
+            className="block"
+          >
+            <div className="aspect-video w-full overflow-hidden bg-muted">
+              <img
+                src={
+                  item.ogImage ??
+                  'https://media.istockphoto.com/id/1128826884/vector/no-image-vector-symbol-missing-available-icon-no-gallery-for-this-moment.jpg?s=612x612&w=0&k=20&c=390e76zN_TJ7HZHJpnI7jNl7UBpO3UP7hpR2meE1Qd4='
+                }
+                alt={item.title ?? 'Article Thumbnail'}
+                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+              />
+            </div>
 
             <CardHeader className="space-y-3 pt-4">
               <div className="flex items-center justify-between gap-2">
@@ -111,6 +121,23 @@ export default function ItemList({
               </CardTitle>
               {item.author && (
                 <p className="text-xs text-muted-foreground">{item.author}</p>
+              )}
+
+              {item.summary && (
+                <CardDescription className="line-clamp-3 text-sm">
+                  {item.summary}
+                </CardDescription>
+              )}
+
+              {/* Tags */}
+              {item.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-2">
+                  {item.tags.slice(0, 4).map((tag, index) => (
+                    <Badge variant="secondary" key={index}>
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
               )}
             </CardHeader>
           </Link>
